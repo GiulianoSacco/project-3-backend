@@ -8,10 +8,10 @@ const { isAuthenticated } = require('../middleware/jwt.middleware');
 const fileUploader = require('../config/cloudinary.config');
 
 router.post("/pet-profile/create", fileUploader.single('image'), isAuthenticated, async (req, res, next) => {
-    const user = req.payload
     const { name, image } = req.body
+    image = req.file.path
     try {
-        const petProfile = await Pet.create({ name, image: req.file.path, $push: { user: req.payload._id } })
+        const petProfile = await Pet.create({ name, image, user: req.payload._id })
         const userDb = await User.findByIdAndUpdate(req.payload._id, { $push: { pet: petProfile._id } });
         res.json(petProfile);
     } catch (error) {
@@ -22,21 +22,21 @@ router.post("/pet-profile/create", fileUploader.single('image'), isAuthenticated
 
 router.get("/pet-profile", isAuthenticated, async (req, res, next) => {
     try {
-        const petsProfiles = await Pet.findById(req.payload.pet._id)
+        const petsProfiles = await Pet.find({user: req.payload._id})
         res.json(petsProfiles);
     } catch (error) {
         res.json(error)
     }
 })
 
-router.put("/pet-profile/add-photo", fileUploader.single('image'), isAuthenticated, async (req, res) => {
-    const user = req.payload
-    const { name, image } = req.body
+
+router.delete("/pet-profile/:petId", isAuthenticated, fileUploader.single('image'), isAuthenticated, async (req, res, next) => {
+    const  petId = req.params.petId
     try {
-        const petImage = await Pet.findByIdAndUpdate(req.payload.pet._id, { image: req.file.path })
-        res.json(petImage)
+        const petDb = await Pet.findOneAndDelete(req.payload.pet._id, { image: req.file.path })
+        res.json(petProfile);
     } catch (error) {
-        console.log(error)
+        res.json(error)
     }
 })
 
